@@ -50,13 +50,28 @@ type cecAdapter struct {
 	Comm string
 }
 
-func cecInit(deviceName string) (C.libcec_connection_t, error) {
+type cecDeviceType int
+
+const (
+	DeviceTypeTv        cecDeviceType = C.CEC_DEVICE_TYPE_TV
+	DeviceTypeRecording               = C.CEC_DEVICE_TYPE_RECORDING_DEVICE
+	DeviceTypeReserved                = C.CEC_DEVICE_TYPE_RESERVED
+	DeviceTypeTuner                   = C.CEC_DEVICE_TYPE_TUNER
+	DeviceTypePlayback                = C.CEC_DEVICE_TYPE_PLAYBACK_DEVICE
+	DeviceTypeAudio                   = C.CEC_DEVICE_TYPE_AUDIO_SYSTEM
+)
+
+func cecInit(deviceName string, deviceType cecDeviceType) (C.libcec_connection_t, error) {
 	var connection C.libcec_connection_t
 	var conf C.libcec_configuration
+	C.libcec_clear_configuration(&conf)
 
 	conf.clientVersion = C.uint32_t(C.LIBCEC_VERSION_CURRENT)
 
-	conf.deviceTypes.types[0] = C.CEC_DEVICE_TYPE_RECORDING_DEVICE
+	conf.deviceTypes.types[0] = C.cec_device_type(deviceType)
+	for i := 1; i < 5; i++ {
+		conf.deviceTypes.types[i] = C.CEC_DEVICE_TYPE_RESERVED
+	}
 
 	C.setName(&conf, C.CString(deviceName))
 	C.setupCallbacks(&conf)
@@ -216,13 +231,20 @@ func (c *Connection) GetDeviceOSDName(address int) string {
 
 // IsActiveSource - check if the device at the given address is the active source
 func (c *Connection) IsActiveSource(address int) bool {
-	result := C.libcec_is_active_source(c.connection, C.cec_logical_address(address))
+	return C.libcec_is_active_source(c.connection, C.cec_logical_address(address)) != 0
+}
 
-	if int(result) != 0 {
-		return true
-	}
+// IsActiveDevice - check if the device at the given logical address is active on the bus
+func (c *Connection) IsActiveDevice(address int) bool {
+	return C.libcec_is_active_device(c.connection, C.cec_logical_address(address)) != 0
+}
 
-	return false
+func (c *Connection) LibcecIsActiveSource() bool {
+	return int(C.libcec_is_libcec_active_source(c.connection)) != 0
+}
+
+func (c *Connection) SetActiveSource(t cecDeviceType) bool {
+	return int(C.libcec_set_active_source(c.connection, C.cec_device_type(t))) != 0
 }
 
 // GetDeviceVendorID - Get the Vendor-ID of the device at the given address
@@ -238,6 +260,12 @@ func (c *Connection) GetDevicePhysicalAddress(address int) string {
 	result := C.libcec_get_device_physical_address(c.connection, C.cec_logical_address(address))
 
 	return fmt.Sprintf("%x.%x.%x.%x", (uint(result)>>12)&0xf, (uint(result)>>8)&0xf, (uint(result)>>4)&0xf, uint(result)&0xf)
+}
+
+func (c *Connection) GetMyPrimaryLogicalAddress() int {
+	result := C.libcec_get_logical_addresses(c.connection)
+
+	return int(result.primary)
 }
 
 // GetDevicePowerStatus - Get the power status of the device at the
