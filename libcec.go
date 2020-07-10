@@ -65,6 +65,7 @@ func cecInit(deviceName string, deviceType cecDeviceType) (C.libcec_connection_t
 	var connection C.libcec_connection_t
 	var conf C.libcec_configuration
 	C.libcec_clear_configuration(&conf)
+	conf.bActivateSource = 0
 
 	conf.clientVersion = C.uint32_t(C.LIBCEC_VERSION_CURRENT)
 
