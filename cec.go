@@ -2,7 +2,6 @@ package cec
 
 import (
 	"encoding/hex"
-	"log"
 	"strings"
 	"time"
 )
@@ -62,19 +61,19 @@ func Open(name string, deviceName string, deviceType cecDeviceType) (*Connection
 
 	c.connection, err = cecInit(deviceName, deviceType)
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
 		return nil, err
 	}
 
 	adapter, err := getAdapter(c.connection, name)
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
 		return nil, err
 	}
 
 	err = openAdapter(c.connection, adapter)
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
 		return nil, err
 	}
 
@@ -92,7 +91,7 @@ func (c *Connection) Key(address int, key interface{}) {
 		if key[:2] == "0x" && len(key) == 4 {
 			keybytes, err := hex.DecodeString(key[2:])
 			if err != nil {
-				log.Println(err)
+				//log.Println(err)
 				return
 			}
 			keycode = int(keybytes[0])
@@ -102,18 +101,18 @@ func (c *Connection) Key(address int, key interface{}) {
 	case int:
 		keycode = key
 	default:
-		log.Println("Invalid key type")
+		//log.Println("Invalid key type")
 		return
 	}
 	er := c.KeyPress(address, keycode)
 	if er != nil {
-		log.Println(er)
+		//log.Println(er)
 		return
 	}
 	time.Sleep(10 * time.Millisecond)
 	er = c.KeyRelease(address)
 	if er != nil {
-		log.Println(er)
+		//log.Println(er)
 		return
 	}
 }
